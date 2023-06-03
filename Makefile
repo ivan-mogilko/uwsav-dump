@@ -1,4 +1,4 @@
-INCDIR = 
+INCDIR = ./
 LIBDIR = 
 TARGET = uwsav-dump
 
