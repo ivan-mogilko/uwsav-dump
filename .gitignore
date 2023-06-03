@@ -1,5 +1,10 @@
-# build output
+# gcc build output
+*.o
+uwsav-dump
+
+# MSVS build output
 /.build/*
+uwsav-dump.exe
 
 # MSVS workspace files
 *.VC.db

@@ -1,6 +1,7 @@
 #include <memory>
 #include <stdint.h>
 #include <string>
+#include <string.h>
 #include <vector>
 #include "utils/filestream.h"
 #include "utils/stream.h"
