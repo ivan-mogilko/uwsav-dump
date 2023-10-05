@@ -1,4 +1,5 @@
 #include "filestream.h"
+#include <stdexcept>
 #include "compat_stdio.h"
 
 static std::string GetCMode(FileOpenMode open_mode, StreamMode work_mode)
