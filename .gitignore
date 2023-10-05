@@ -1,0 +1,12 @@
+# build output
+/build/*
+
+# MSVS workspace files
+*.VC.db
+*.VC.opendb
+*.vcxproj.user
+/msvc/.vs/*
+
+# MSVS intermediate output
+/msvc/Win32/*
+/msvc/x64/*
