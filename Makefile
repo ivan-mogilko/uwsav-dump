@@ -21,6 +21,7 @@ OBJS_UTILS = \
 	utils/filestream.cpp
 
 OBJS_UWSAV = \
+	uwsav/uwsav_data.cpp \
 	uwsav.cpp
 
 OBJS := $(OBJS_UTILS) $(OBJS_UWSAV)
