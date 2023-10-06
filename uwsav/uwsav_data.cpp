@@ -94,6 +94,7 @@ struct ObjectDataPacked
 static TileData UnpackTileData(const TileDataPacked& ptile)
 {
     TileData tile;
+    tile.Type = static_cast<TileType>(ptile.data1 & 0x7);
     tile.FirstObjLink = (ptile.data2 >> 6) & 0x3FF;
     return tile;
 }

@@ -15,9 +15,23 @@
 #include "utils/stream.h"
 
 // Level Tile data
+enum TileType
+{
+    kTileSolid  = 0,
+    kTileOpen   = 1,
+    kTileOpenSE = 2,
+    kTileOpenSW = 3,
+    kTileOpenNE = 4,
+    kTileOpenNW = 5,
+    kTileSlopeN = 6,
+    kTileSlopeS = 7,
+    kTileSlopeE = 8,
+    kTileSlopeW = 9
+};
 
 struct TileData
 {
+    TileType Type = kTileSolid;
     uint16_t FirstObjLink = 0u; // ref to obj list
 };
 
@@ -41,6 +55,9 @@ struct ObjectData
 */
 struct LevelData
 {
+    const uint16_t Width = 64u;
+    const uint16_t Height = 64u;
+
     std::vector<TileData> tiles;
     std::vector<ObjectData> objs;
 };
