@@ -32,11 +32,19 @@ void write_text_ln(Stream &out, const char *cstr)
     out.Write("\n", 1);
 }
 
+enum TileGlyphExtra
+{
+    kTileExtraDoor = kTileSlopeW + 1,
+    kTileExtraUnknown
+};
+
 void print_tilemap(Stream &out, const LevelData &level)
 {
     write_text_ln(out, "   0000000000111111111122222222223333333333444444444455555555556666");
     write_text_ln(out, "   0123456789012345678901234567890123456789012345678901234567890123");
     write_text_ln(out, "  -----------------------------------------------------------------");
+
+    const char* tile_glyph[] = { "X", " ", "p", "q", "b", "d", " ", " ", " ", " ", "=", "?" };
 
     std::string line;
     for (uint16_t y = 0; y < level.Height; ++y)
@@ -47,20 +55,12 @@ void print_tilemap(Stream &out, const LevelData &level)
         for (uint16_t x = 0; x < level.Width; ++x)
         {
             const TileData& tile = level.tiles[uw_y * level.Width + x];
-            switch (tile.Type)
-            {
-            case kTileSolid:    line.append("X"); break;
-            case kTileOpen:     line.append(" "); break;
-            case kTileOpenSE:   line.append("p"); break;
-            case kTileOpenSW:   line.append("q"); break;
-            case kTileOpenNE:   line.append("b"); break;
-            case kTileOpenNW:   line.append("d"); break;
-            case kTileSlopeN:   line.append(" "); break;
-            case kTileSlopeS:   line.append(" "); break;
-            case kTileSlopeE:   line.append(" "); break;
-            case kTileSlopeW:   line.append(" "); break;
-            default:            line.append("?"); break;
-            }
+            if (tile.IsDoor)
+                line.append(tile_glyph[kTileExtraDoor]);
+            else if (tile.Type >= kTileSolid && tile.Type <= kTileSlopeW)
+                line.append(tile_glyph[tile.Type]);
+            else
+                line.append(tile_glyph[kTileExtraUnknown]);
         }
         line.append("|");
         write_text_ln(out, line);

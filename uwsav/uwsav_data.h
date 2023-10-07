@@ -32,6 +32,7 @@ enum TileType
 struct TileData
 {
     TileType Type = kTileSolid;
+    bool IsDoor = false;
     uint16_t FirstObjLink = 0u; // ref to obj list
 };
 
