@@ -107,7 +107,24 @@ static ObjectData UnpackObjectData(const ObjectDataPacked& pobj)
     obj.ItemID = pobj.data1 & 0x1FF;
     obj.Flags = (pobj.data1 >> 9) & 0xF;
     obj.NextObjLink = (pobj.data3 >> 6) & 0x3FF;
-    obj.Special = (pobj.data4 >> 6) & 0x3FF;
+
+    /*
+        If the "is_quant" field is 0 (unset), it contains the index of an associated
+        object.
+        If the "is_quant" flag is set, the field is a quantity or a special
+        property. If the value is < 512 or 0x0200 it gives the number of stacked
+        items present.
+        If the value is > 512, the value minus 512 is a special property; the
+        object type defines the further meaning of this value.
+    */
+    bool is_quant = (pobj.data1 & 0x8000) != 0;
+    uint16_t special = (pobj.data4 >> 6) & 0x3FF;
+    if (is_quant && special < 512)
+        obj.Quantity = special;
+    else if (is_quant && special > 512)
+        obj.SpecialProperty = special - 512;
+    else
+        obj.SpecialLink = special;
     return obj;
 }
 

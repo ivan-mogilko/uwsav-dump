@@ -38,8 +38,10 @@ enum TileGlyphExtra
     kTileExtraUnknown
 };
 
+// Prints tilemap in ASCII
 void print_tilemap(Stream &out, const LevelData &level)
 {
+    write_text_ln(out, "--------------------------------------------------------------------");
     write_text_ln(out, "   0000000000111111111122222222223333333333444444444455555555556666");
     write_text_ln(out, "   0123456789012345678901234567890123456789012345678901234567890123");
     write_text_ln(out, "  -----------------------------------------------------------------");
@@ -69,35 +71,75 @@ void print_tilemap(Stream &out, const LevelData &level)
     write_text_ln(out, "  -----------------------------------------------------------------");
 }
 
+void print_objlinkedlist(Stream &out, const LevelData &level,
+    uint16_t obj_index, const std::string &indent)
+{
+    std::string line;
+    std::vector<uint16_t> containers;
+    while (obj_index > 0)
+    {
+        if (line.size() >= 80)
+        {
+            write_text_ln(out, line);
+            line = indent + ">>  ";
+        }
+
+        const ObjectData& obj = level.objs[obj_index];
+        // NPCs or containers: save for later
+        if ((obj.ItemID >= 0x0040 && obj.ItemID <= 0x007f) ||
+            (obj.ItemID >= 0x0080 && obj.ItemID <= 0x008f))
+        {
+            containers.push_back(obj_index);
+        }
+        else
+        {
+            std::string s = StrPrint(" 0x%03x", obj.ItemID);
+            if (obj.Quantity > 1)
+                s.append(StrPrint(" (*%03u) |", obj.Quantity));
+            else
+                s.append("        |");
+            line.append(s);
+        }
+
+        uint16_t next_index = obj.NextObjLink;
+        if (next_index == obj_index)
+            break; // safety skip, prevent endless loop
+        obj_index = next_index;
+    }
+    write_text_ln(out, line);
+
+    for (auto cont_index : containers)
+    {
+        const ObjectData &obj = level.objs[cont_index];
+        const char *tag = (obj.ItemID >= 0x0040 && obj.ItemID <= 0x007f) ? "npc" : "inv";
+        const char *has_inv = (obj.SpecialLink > 0) ? "+" : "-";
+        const char *has_inv2 = (obj.SpecialLink > 0) ? ":" : " ";
+        write_text(out, indent + ">>  " + StrPrint(" 0x%03x (%s%s)%s ", obj.ItemID, has_inv, tag, has_inv2));
+        if (obj.SpecialLink > 0)
+            print_objlinkedlist(out, level, obj.SpecialLink, indent + "               ");
+        else
+            write_text_ln(out, "");
+    }
+}
+
+// Prints master objects list
 void print_objlist(Stream &out, const LevelData &level)
 {
-    // print object lists per tile
-    // 64x64
-    const uint16_t levelwidth = 64;
-    const uint16_t levelheight = 64;
-    for (uint16_t tileid = 0; tileid < level.tiles.size(); ++tileid)
+    write_text_ln(out, "--------------------------------------------------------------------");
+    write_text_ln(out, "  Objects in Tiles");
+
+    for (uint16_t y = 0; y < level.Height; ++y)
     {
-        // ???
-        uint16_t tiley = tileid / levelheight;
-        uint16_t tilex = tileid - tiley * levelheight;
-        uint16_t obj_index = level.tiles[tileid].FirstObjLink;
-        if (obj_index == 0)
-            continue;
-        std::string s = StrPrint("    T [%02dx%02d]: ", tilex, tiley);
-        write_text(out, s);
-        while (obj_index > 0)
+        for (uint16_t x = 0; x < level.Width; ++x)
         {
-            const ObjectData &obj = level.objs[obj_index];
-            std::string s = StrPrint("0x%x (0x%x, %d)", obj.ItemID, obj.Flags, obj.Special);
-            write_text(out, s);
-            write_text(out, "    ");
-            uint16_t next_index = obj.NextObjLink;
-            // assertion, bug?
-            if (next_index == obj_index)
-                break;
-            obj_index = next_index;
+            const TileData& tile = level.tiles[y * level.Width + x];
+            uint16_t obj_index = tile.FirstObjLink;
+            if (obj_index == 0)
+                continue;
+
+            write_text(out, StrPrint(" T [%02dx%02d]: ", x, y));
+            print_objlinkedlist(out, level, obj_index, "        ");
         }
-        write_text(out, "\n");
     }
 }
 
@@ -112,8 +154,6 @@ void print_levels(Stream &out, const std::vector<LevelData> &levels)
 
         print_tilemap(out, levels[i]);
         print_objlist(out, levels[i]);
-
-        write_text_ln(out, "==========================================");
     }
 }
 

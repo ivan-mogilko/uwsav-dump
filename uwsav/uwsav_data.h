@@ -41,7 +41,9 @@ struct ObjectData
     uint16_t ItemID = 0u; // type of item, defined by game
     uint16_t Flags = 0u;
     uint16_t NextObjLink = 0u; // ref to obj list
-    uint16_t Special = 0u; // depends on item type
+    uint16_t Quantity = 1u;
+    uint16_t SpecialLink = 0u; // link to npc's or container's inventory
+    uint16_t SpecialProperty = 0u; // ?
 };
 
 // General Level data
