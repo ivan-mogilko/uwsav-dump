@@ -8,7 +8,7 @@ Dumps following:
 
 The original purpose of this tool is to search for objects of particular kind on the game levels.
 Because UW player saves also contain full copy of level data (as lev.ark file) this lets dump both startup level data and the saved state.
-May be useful if you lost an important item and want to find it without searching whole game world in-game.
+May be useful if you've lost an important item and want to find it without searching whole game world in-game.
 Also may be utilized for statistics and level research.
 
 Usage:
@@ -25,7 +25,7 @@ Building:
 
 [MIT License](LICENSE.md)
 
-### Credits
+### Acknowledgements
 
 Used thorough format specification by [vividos](https://github.com/vividos/), found at:
 http://bootstrike.com/Ultima/Online/uwformat.php
