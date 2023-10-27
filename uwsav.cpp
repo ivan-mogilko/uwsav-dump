@@ -162,7 +162,14 @@ void print_objlist(Stream &out, const LevelData &level)
     out.Seek(end_pos, kSeekBegin);
 }
 
-void print_levels(Stream &out, const std::vector<LevelData> &levels)
+struct CommandOptions
+{
+    bool UW2 = false; // read as Ultima Underworld 2
+    bool PrintMaps = true;
+    bool PrintObjs = false;
+};
+
+void print_levels(Stream &out, const std::vector<LevelData> &levels, const CommandOptions &opts)
 {
     for (const auto &level : levels)
     {
@@ -173,15 +180,12 @@ void print_levels(Stream &out, const std::vector<LevelData> &levels)
         else
             write_text_ln(out, StrPrint(" Level %d", level.LevelID));
 
-        print_tilemap(out, level);
-        print_objlist(out, level);
+        if (opts.PrintMaps)
+            print_tilemap(out, level);
+        if (opts.PrintObjs)
+            print_objlist(out, level);
     }
 }
-
-struct CommandOptions
-{
-    bool UW2 = false; // read as Ultima Underworld 2
-};
 
 int main(int argc, char **argv)
 {
@@ -195,6 +199,8 @@ int main(int argc, char **argv)
     {
         if (strcmp(argv[argi], "-uw2") == 0)
             opts.UW2 = true;
+        if (strcmp(argv[argi], "-po") == 0)
+            opts.PrintObjs = true;
     }
     const char *in_filename = argv[argi++];
     const char *out_filename = (argi < argc) ? argv[argi++] : nullptr;
@@ -216,7 +222,7 @@ int main(int argc, char **argv)
         Stream out(FileStream::TryOpen(out_filename, kFileMode_CreateAlways, kStream_Write));
         if (out)
         {
-            print_levels(out, levels);
+            print_levels(out, levels, opts);
         }
     }
     return 0;
