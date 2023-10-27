@@ -6,6 +6,12 @@
 #ifndef COMMON_UTILS__PLATFORM_H__
 #define COMMON_UTILS__PLATFORM_H__
 
+#if defined(_WIN32)
+    #define PLATFORM_OS_WINDOWS     (1)
+#else
+    #define PLATFORM_OS_WINDOWS     (0)
+#endif
+
 #if defined(__LP64__)
     // LP64 machine, OS X or Linux
     // int 32bit | long 64bit | long long 64bit | void* 64bit

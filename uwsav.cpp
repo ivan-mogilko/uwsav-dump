@@ -4,6 +4,7 @@
 #include <string.h>
 #include <vector>
 #include "uwsav/uwsav_data.h"
+#include "utils/platform.h"
 #include "utils/filestream.h"
 #include "utils/stream.h"
 #include "utils/str_utils.h"
@@ -167,6 +168,7 @@ void print_objlist(Stream &out, const LevelData &level)
 
 struct CommandOptions
 {
+    bool PrintHelp = false;
     bool UW2 = false; // read as Ultima Underworld 2
     bool PrintMaps = true;
     bool PrintObjs = false;
@@ -190,25 +192,60 @@ void print_levels(Stream &out, const std::vector<LevelData> &levels, const Comma
     }
 }
 
+void print_help()
+{
+    printf(
+#if (PLATFORM_OS_WINDOWS)
+    "Usage: uwsav-dump.exe [OPTIONS] <input-lvl.ark> <output-text-file>\n"
+#else
+    "Usage: uwsav-dump [OPTIONS] <input-lvl.ark> <output-text-file>\n"
+#endif
+    //--------------------------------------------------------------------------------|
+     "\nOptions:\n"
+     "   -?, --help     print this help message and stop\n"
+     "   -uw2           assume \"Ultima Underworld 2\" data\n"
+     "   -po            print map's objects list\n"
+    //--------------------------------------------------------------------------------|
+     "\nExample:\n"
+#if (PLATFORM_OS_WINDOWS)
+     "   uwsav-dump.exe -uw2 -po UW2/SAVE1/lev.ark save1_levels.txt\n"
+#else
+     "   uwsav-dump -uw2 -po ./UW2/SAVE1/lev.ark ./save1_levels.txt\n"
+#endif
+    );
+}
+
 int main(int argc, char **argv)
 {
     if (argc < 2)
+    {
+        print_help();
         return -1;
+    }
 
     CommandOptions opts;
 
     int argi;
     for (argi = 1; argi < argc && strncmp(argv[argi], "-", 1) == 0; ++argi)
     {
+        if (strcmp(argv[argi], "-?") == 0 || strcmp(argv[argi], "--help") == 0)
+            opts.PrintHelp = true;
         if (strcmp(argv[argi], "-uw2") == 0)
             opts.UW2 = true;
         if (strcmp(argv[argi], "-po") == 0)
             opts.PrintObjs = true;
     }
+
     const char *in_filename = argv[argi++];
     const char *out_filename = (argi < argc) ? argv[argi++] : nullptr;
-    std::vector<LevelData> levels;
 
+    if (opts.PrintHelp || !out_filename)
+    {
+        print_help();
+        return 0;
+    }
+
+    std::vector<LevelData> levels;
     {
         Stream in(FileStream::TryOpen(in_filename, kFileMode_Open, kStream_Read));
         if (in)

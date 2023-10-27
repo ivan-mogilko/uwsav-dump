@@ -1,6 +1,7 @@
 ### uwsav-dump
 
 This is a simple command-line tool meant for dumping "Ultima Underworld"'s lev.ark data to a text file.
+Supports UW1 and UW2 files (see command line options).
 
 Dumps following:
 - Level map, in ASCII (marks openings, walls and doors only).
@@ -13,7 +14,17 @@ Also may be utilized for statistics and level research.
 
 Usage:
 
-    uwsav-dump.exe <input-lvl.ark> <output-text-file>
+    uwsav-dump.exe [OPTIONS] <input-lvl.ark> <output-text-file>
+
+Options are:
+
+    -?, --help    print help and stop
+    -uw2          assume "Ultima Underworld 2" data
+    -po           print map's objects list
+
+Example:
+
+    uwsav-dump.exe -uw2 -po UW2/SAVE1/lev.ark save1_levels.txt
 
 Building:
 
