@@ -72,12 +72,18 @@ void print_tilemap(Stream &out, const LevelData &level)
 }
 
 void print_objlinkedlist(Stream &out, const LevelData &level,
-    uint16_t obj_index, const std::string &indent)
+    uint16_t obj_index, uint16_t &obj_mob_count, uint16_t &obj_static_count,
+    const std::string &indent)
 {
     std::string line;
     std::vector<uint16_t> containers;
     while (obj_index > 0)
     {
+        if (obj_index < 256)
+            obj_mob_count++;
+        else
+            obj_static_count++;
+
         if (line.size() >= 80)
         {
             write_text_ln(out, line);
@@ -116,7 +122,8 @@ void print_objlinkedlist(Stream &out, const LevelData &level,
         const char *has_inv2 = (obj.SpecialLink > 0) ? ":" : " ";
         write_text(out, indent + ">>  " + StrPrint(" 0x%03x (%s%s)%s ", obj.ItemID, has_inv, tag, has_inv2));
         if (obj.SpecialLink > 0)
-            print_objlinkedlist(out, level, obj.SpecialLink, indent + "               ");
+            print_objlinkedlist(out, level, obj.SpecialLink, obj_mob_count, obj_static_count,
+                                indent + "               ");
         else
             write_text_ln(out, "");
     }
@@ -126,7 +133,10 @@ void print_objlinkedlist(Stream &out, const LevelData &level,
 void print_objlist(Stream &out, const LevelData &level)
 {
     write_text_ln(out, "--------------------------------------------------------------------");
-    write_text_ln(out, "  Objects in Tiles");
+    write_text_ln(out, "  Objects in Tiles: ");
+    auto sum_pos = out.GetPosition();
+    write_text_ln(out, "Total:  0000 / 0000\nMobile: 0000 / 0000\nStatic: 0000 / 0000");
+    uint16_t obj_mob_count = 0, obj_static_count = 0;
 
     for (uint16_t y = 0; y < level.Height; ++y)
     {
@@ -138,9 +148,18 @@ void print_objlist(Stream &out, const LevelData &level)
                 continue;
 
             write_text(out, StrPrint(" T [%02dx%02d]: ", x, y));
-            print_objlinkedlist(out, level, obj_index, "        ");
+            print_objlinkedlist(out, level, obj_index,
+                                obj_mob_count, obj_static_count, "        ");
         }
     }
+
+    // Print object summary
+    auto end_pos = out.GetPosition();
+    out.Seek(sum_pos, kSeekBegin);
+    write_text_ln(out, StrPrint("Total:  %04d / %04d\nMobile: %04d / %04d\nStatic: %04d / %04d",
+        obj_mob_count + obj_static_count, LevelData::MaxObjects,
+        obj_mob_count, LevelData::MaxMobiles, obj_static_count, LevelData::MaxStatic));
+    out.Seek(end_pos, kSeekBegin);
 }
 
 void print_levels(Stream &out, const std::vector<LevelData> &levels)

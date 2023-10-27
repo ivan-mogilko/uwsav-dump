@@ -58,8 +58,11 @@ struct ObjectData
 */
 struct LevelData
 {
-    const uint16_t Width = 64u;
-    const uint16_t Height = 64u;
+    static const uint16_t Width = 64u;
+    static const uint16_t Height = 64u;
+    static const uint16_t MaxObjects = 1024u;
+    static const uint16_t MaxMobiles = 256u;
+    static const uint16_t MaxStatic = 768u;
 
     std::vector<TileData> tiles;
     std::vector<ObjectData> objs;
