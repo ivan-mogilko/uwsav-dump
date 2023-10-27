@@ -55,6 +55,8 @@ public:
 
     virtual bool    Seek(soff_t offset, StreamSeek origin) = 0;
 
+    // Closes the stream
+    virtual void    Close() = 0;
     // Flush stream buffer to the underlying device
     virtual bool    Flush() = 0;
 
@@ -79,6 +81,8 @@ public:
 
     operator bool() const       { return IsValid(); }
 
+    // Closes the stream
+    void    Close()             { _base->Close(); }
     // Flush stream buffer to the underlying device
     void    Flush()             { _base->Flush(); }
 

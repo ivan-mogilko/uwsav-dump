@@ -48,6 +48,7 @@ public:
 
     bool    Seek(soff_t offset, StreamSeek origin) override;
 
+    void    Close() override;
     bool    Flush() override;
 
 private:

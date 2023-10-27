@@ -164,32 +164,50 @@ void print_objlist(Stream &out, const LevelData &level)
 
 void print_levels(Stream &out, const std::vector<LevelData> &levels)
 {
-    for (size_t i = 0; i < levels.size(); ++i)
+    for (const auto &level : levels)
     {
         write_text_ln(out, "==========================================");
 
-        std::string s = StrPrint(" Level %d", i + 1);
-        write_text_ln(out, s);
+        if (level.WorldID > 0)
+            write_text_ln(out, StrPrint(" World %d, Level %d", level.WorldID, level.LevelID));
+        else
+            write_text_ln(out, StrPrint(" Level %d", level.LevelID));
 
-        print_tilemap(out, levels[i]);
-        print_objlist(out, levels[i]);
+        print_tilemap(out, level);
+        print_objlist(out, level);
     }
 }
+
+struct CommandOptions
+{
+    bool UW2 = false; // read as Ultima Underworld 2
+};
 
 int main(int argc, char **argv)
 {
     if (argc < 2)
         return -1;
 
-    const char *in_filename = argv[1];
-    const char *out_filename = (argc > 2) ? argv[2] : nullptr;
+    CommandOptions opts;
+
+    int argi;
+    for (argi = 1; argi < argc && strncmp(argv[argi], "-", 1) == 0; ++argi)
+    {
+        if (strcmp(argv[argi], "-uw2") == 0)
+            opts.UW2 = true;
+    }
+    const char *in_filename = argv[argi++];
+    const char *out_filename = (argi < argc) ? argv[argi++] : nullptr;
     std::vector<LevelData> levels;
 
     {
         Stream in(FileStream::TryOpen(in_filename, kFileMode_Open, kStream_Read));
         if (in)
         {
-            ReadLevels(in, levels);
+            if (opts.UW2)
+                ReadLevelsUW2(in, levels);
+            else
+                ReadLevelsUW1(in, levels);
         }
     }
 

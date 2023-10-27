@@ -60,6 +60,7 @@ void FileStream::OpenImpl(const std::string &path, FileOpenMode open_mode, Strea
 
 void FileStream::CloseImpl()
 {
+    fflush(_file);
     if (_file)
         fclose(_file);
     _file = nullptr;
@@ -136,6 +137,11 @@ bool FileStream::Seek(soff_t offset, StreamSeek origin)
         return false;
     }
     return compat_fseek(_file, static_cast<file_off_t>(offset), whence) == 0;
+}
+
+void FileStream::Close()
+{
+    CloseImpl();
 }
 
 bool FileStream::Flush()

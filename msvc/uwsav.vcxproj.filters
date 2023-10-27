@@ -19,6 +19,9 @@
     <ClCompile Include="..\uwsav\uwsav_data.cpp">
       <Filter>uwsav</Filter>
     </ClCompile>
+    <ClCompile Include="..\utils\memorystream.cpp">
+      <Filter>utils</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\utils\bbop.h">
@@ -41,6 +44,9 @@
     </ClInclude>
     <ClInclude Include="..\uwsav\uwsav_data.h">
       <Filter>uwsav</Filter>
+    </ClInclude>
+    <ClInclude Include="..\utils\memorystream.h">
+      <Filter>utils</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

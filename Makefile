@@ -18,7 +18,8 @@ LDFLAGS = $(addprefix -L,$(LIBDIR))
 
 OBJS_UTILS = \
 	utils/compat_stdio.c \
-	utils/filestream.cpp
+	utils/filestream.cpp \
+	utils/memorystream.cpp
 
 OBJS_UWSAV = \
 	uwsav/uwsav_data.cpp \

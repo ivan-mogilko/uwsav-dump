@@ -1,4 +1,6 @@
+#include <assert.h>
 #include "uwsav_data.h"
+#include "utils/memorystream.h"
 
 // Various constants; UW format has many things fixed in size and number.
 const uint32_t LevelTilemapBlockSize = 31752;
@@ -19,11 +21,15 @@ const uint16_t TotalObjectsLimit     = (MobileObjectsLimit + StaticObjectsLimit)
     0006   Int32   file offset to block 1
     ...            etc.
 */
+
 struct DataBlockInfo
 {
-    uint32_t index = 0u;
-    uint32_t offset = 0u;
-    uint32_t size = 0u;
+    uint32_t Index = 0u;
+    uint32_t Offset = 0u;
+    bool     IsCompressed = false; // UW2
+    bool     HasAvailSpace = false; // UW2
+    uint32_t Size = 0u;
+    uint32_t AvailSpace = 0u; // UW2
 };
 
 // Packed Tile data
@@ -176,7 +182,7 @@ static void ReadLevelTilemap(Stream &in, LevelData &levelinfo)
         levelinfo.objs.push_back(UnpackObjectData(pobj));
 }
 
-void ReadLevels(Stream &in, std::vector<LevelData> &levels)
+void ReadLevelsUW1(Stream &in, std::vector<LevelData> &levels)
 {
     levels.clear();
 
@@ -184,26 +190,168 @@ void ReadLevels(Stream &in, std::vector<LevelData> &levels)
     std::vector<DataBlockInfo> blocks(num_blocks);
     for (uint16_t i = 0; i < num_blocks; ++i)
     {
-        blocks[i].index = i;
-        blocks[i].offset = in.ReadInt32LE();
+        blocks[i].Index = i;
+        blocks[i].Offset = in.ReadInt32LE();
     }
     for (uint16_t i = 0; i < num_blocks - 1; ++i)
     {
-        blocks[i].size = blocks[i + 1].offset - blocks[i].offset;
+        blocks[i].Size = blocks[i + 1].Offset - blocks[i].Offset;
     }
-    blocks[num_blocks - 1].size = static_cast<uint32_t>(in.GetLength() - blocks[num_blocks - 1].offset);
+    blocks[num_blocks - 1].Size = static_cast<uint32_t>(in.GetLength() - blocks[num_blocks - 1].Offset);
 
-    // TODO: an option telling what we read, uw1 or uw2 etc;
-    // different games may have different block types and their sizes
-    for (uint16_t blk_index = 0; blk_index < blocks.size(); ++blk_index)
+    uint8_t level_id = 1u;
+    for (const auto &block : blocks)
     {
         // Block sizes are constant, we may use these to identify block type
-        if (blocks[blk_index].size != LevelTilemapBlockSize)
+        if (block.Size != LevelTilemapBlockSize)
             continue;
 
-        in.Seek(blocks[blk_index].offset, kSeekBegin);
         LevelData level;
+        level.LevelID = level_id++;
+        in.Seek(block.Offset, kSeekBegin);
         ReadLevelTilemap(in, level);
         levels.push_back(std::move(level));
+    }
+}
+
+bool UncompressUW2Block(const std::vector<uint8_t> &in_data, std::vector<uint8_t> &out_data)
+{
+    /*
+       A compressed block always starts with an Int32 value that is to be ignored.
+       If a block is actually compressed, it can be divided into subblocks.
+       Each compressed subblock starts with an Int8 number; the bits from LSB to
+       MSB describe if the following byte is just transferred to the target buffer
+       (bit set) or if we have a copy record (bit cleared). After 8 bytes or copy
+       record, the next subblock begins with an Int8 again.
+
+       The copy record starts with two Int8's:
+       0000   Int8   0..7: position, bits 0..7
+       0001   Int8   0..3: copy count
+                     4..7: position, bits 8..11
+
+       The copy count is 4 bits long and an offset of 3 is added to it. The
+       position has 12 bits (accessing the last 4k bytes) and an offset of 18 is
+       added. The sign bit is bit 11 and should be treated appropriate. As the
+       position field refers to a position in the current 4k segment, pointers
+       have to be adjusted, too. Then "copy count" bytes are copied from the
+       relative "position" to the current one.
+
+       Also used this for a reference (could not understand "copy record part"):
+       https://github.com/vividos/UnderworldAdventures/blob/main/uwadv/source/base/Uw2decode.cpp
+    */
+
+    const uint8_t *src = &in_data.front();
+    const uint8_t *src_end = src + in_data.size();
+    out_data.reserve(in_data.size());
+
+    src += sizeof(int32_t); // unused?
+    // The decompression loop
+    while (src < src_end)
+    {
+        uint8_t buf_bits = *(src++);
+        for (int b = 0; b < 8; ++b)
+        {
+            if (buf_bits & (1 << b))
+            {
+                // Direct copy byte
+                out_data.push_back(*(src++));
+            }
+            else
+            {
+                // Copy "record": this means copy previously written *uncompressed* data
+                // read 2 int32 with packed data and expand them into position and count
+                int32_t i1 = *(src++);
+                int32_t i2 = *(src++);
+                int32_t position = i1 | ((i2 & 0xF0) << 4);
+                // correct for sign bit
+                if (position & 0x800)
+                    position |= 0xFFFFF000;
+                uint8_t count = (i2 & 0x0F);
+                // add magic hardcoded offsets
+                position += 18;
+                count += 3;
+
+                assert(position < 0 || static_cast<uint32_t>(position) < out_data.size());
+                // adjust pos to current 4k segment
+                while (position < 0 ||
+                       (out_data.size() >= 4096) && (static_cast<uint32_t>(position) < (out_data.size() - 4096)))
+                    position += 4096;
+                // do the copying
+                while (count--)
+                    out_data.push_back(out_data[position++]);
+            }
+        }
+    }
+    return true;
+}
+
+void ReadLevelsUW2(Stream &in, std::vector<LevelData> &levels)
+{
+    levels.clear();
+
+    uint16_t num_blocks = in.ReadInt16LE();
+    in.ReadInt32LE(); // skip unknown
+    std::vector<DataBlockInfo> blocks(num_blocks);
+    for (uint16_t i = 0; i < num_blocks; ++i)
+    {
+        blocks[i].Index = i;
+        blocks[i].Offset = in.ReadInt32LE();
+    }
+    for (uint16_t i = 0; i < num_blocks; ++i)
+    {
+        uint32_t flags = in.ReadInt32LE();
+        blocks[i].IsCompressed = flags & 0x2;
+        blocks[i].HasAvailSpace = flags & 0x4;
+    }
+    for (uint16_t i = 0; i < num_blocks; ++i)
+    {
+        blocks[i].Size = in.ReadInt32LE();
+    }
+    for (uint16_t i = 0; i < num_blocks; ++i)
+    {
+        blocks[i].AvailSpace = in.ReadInt32LE();
+    }
+
+    /*
+        Ultima Underworld 2 has 320 (0x0140) entries (80 levels x 4 blocks). These
+        can be split into 4 sets of 80 entries each:
+
+           0.. 79  level maps
+          80..159  texture mappings
+         160..239  automap infos
+         240..319  map notes
+    */
+    uint16_t blk_index = 0;
+    for (uint16_t world_id = 0; world_id < 10; ++world_id)
+    {
+        for (uint16_t level_id = 0; level_id < 8; ++level_id)
+        {
+            const auto &block = blocks[blk_index++];
+            if (block.Offset == 0 || block.Size == 0)
+                continue; // unused
+
+            LevelData level;
+            level.LevelID = level_id + 1;
+            level.WorldID = world_id + 1;
+
+            in.Seek(block.Offset, kSeekBegin);
+            if (block.IsCompressed)
+            {
+                std::vector<uint8_t> in_data(block.Size);
+                in.Read(&in_data.front(), block.Size);
+                std::vector<uint8_t> out_data;
+                if (UncompressUW2Block(in_data, out_data))
+                {
+                    Stream mems(std::make_unique<VectorStream>(out_data, kStream_Read));
+                    ReadLevelTilemap(mems, level);
+                }
+            }
+            else
+            {
+                ReadLevelTilemap(in, level);
+            }
+
+            levels.push_back(std::move(level));
+        }
     }
 }

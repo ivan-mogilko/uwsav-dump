@@ -64,12 +64,16 @@ struct LevelData
     static const uint16_t MaxMobiles = 256u;
     static const uint16_t MaxStatic = 768u;
 
+    uint8_t LevelID = 0u;
+    uint8_t WorldID = 0u; // UW2
+
     std::vector<TileData> tiles;
     std::vector<ObjectData> objs;
 };
 
 
 // Reads LEVEL.ARK file, fills in LevelData array
-void ReadLevels(Stream &in, std::vector<LevelData> &levels);
+void ReadLevelsUW1(Stream &in, std::vector<LevelData> &levels);
+void ReadLevelsUW2(Stream &in, std::vector<LevelData> &levels);
 
 #endif // UWSAV__SAV_DATA_H__

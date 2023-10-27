@@ -130,6 +130,7 @@
   <ItemGroup>
     <ClCompile Include="..\utils\compat_stdio.c" />
     <ClCompile Include="..\utils\filestream.cpp" />
+    <ClCompile Include="..\utils\memorystream.cpp" />
     <ClCompile Include="..\uwsav.cpp" />
     <ClCompile Include="..\uwsav\uwsav_data.cpp" />
   </ItemGroup>
@@ -137,6 +138,7 @@
     <ClInclude Include="..\utils\bbop.h" />
     <ClInclude Include="..\utils\compat_stdio.h" />
     <ClInclude Include="..\utils\filestream.h" />
+    <ClInclude Include="..\utils\memorystream.h" />
     <ClInclude Include="..\utils\platform.h" />
     <ClInclude Include="..\utils\stream.h" />
     <ClInclude Include="..\utils\str_utils.h" />
