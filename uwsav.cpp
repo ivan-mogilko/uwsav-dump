@@ -135,7 +135,8 @@ void print_objlist(Stream &out, const LevelData &level)
     write_text_ln(out, "--------------------------------------------------------------------");
     write_text_ln(out, "  Objects in Tiles: ");
     auto sum_pos = out.GetPosition();
-    write_text_ln(out, "Total:  0000 / 0000\nMobile: 0000 / 0000\nStatic: 0000 / 0000");
+    const char *sum_format = "Total:  %04d / %04d (%05.2f%%)\nMobile: %04d / %04d (%05.2f%%)\nStatic: %04d / %04d (%05.2f%%)";
+    write_text_ln(out, StrPrint(sum_format, 0, 0, 0.f, 0, 0, 0.f, 0, 0, 0.f));
     uint16_t obj_mob_count = 0, obj_static_count = 0;
 
     for (uint16_t y = 0; y < level.Height; ++y)
@@ -156,9 +157,11 @@ void print_objlist(Stream &out, const LevelData &level)
     // Print object summary
     auto end_pos = out.GetPosition();
     out.Seek(sum_pos, kSeekBegin);
-    write_text_ln(out, StrPrint("Total:  %04d / %04d\nMobile: %04d / %04d\nStatic: %04d / %04d",
+    write_text_ln(out, StrPrint(sum_format,
         obj_mob_count + obj_static_count, LevelData::MaxObjects,
-        obj_mob_count, LevelData::MaxMobiles, obj_static_count, LevelData::MaxStatic));
+        (obj_mob_count + obj_static_count) * 100.f / LevelData::MaxObjects,
+        obj_mob_count, LevelData::MaxMobiles, obj_mob_count * 100.f / LevelData::MaxMobiles,
+        obj_static_count, LevelData::MaxStatic, obj_static_count * 100.f / LevelData::MaxStatic));
     out.Seek(end_pos, kSeekBegin);
 }
 
